@@ -186,7 +186,7 @@ pub async fn game_sessions_index(
     ValidatedQuery(input): ValidatedQuery<GameSessionsIndex>,
     DatabaseConnection(conn): DatabaseConnection,
 ) -> Result<impl IntoResponse, AppError> {
-    let mut conn = conn; b
+    let mut conn = conn;
     let cursor = input.after.unwrap_or(0).max(0);
 
     // todo: maybe get rid of rowid > 0 if no cursor defined?
