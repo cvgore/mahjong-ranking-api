@@ -1,0 +1,95 @@
+@apiVersion = v0
+@baseUrl = http://{{$dotenv BIND_INTERFACE}}
+@url = {{baseUrl}}/{{apiVersion}}
+@authToken = {{$dotenv DEV_FIRE_IDTOKEN}}
+@rankingUuid = {{$dotenv DEV_RANKING_UUID}}
+@gameSessionUuid = {{$dotenv DEV_GAME_SESSION_UUID}}
+
+###
+###
+###
+
+### Index API
+
+GET {{baseUrl}} HTTP/1.1
+
+### Index V0
+
+GET {{url}} HTTP/1.1
+
+### Get game sessions
+
+GET {{url}}/game_sessions?ranking_uuid={{rankingUuid}} HTTP/1.1
+Authorization: Bearer {{authToken}}
+
+### Post game session
+# @prompt player1_uuid
+# @prompt player2_uuid
+# @prompt player3_uuid
+# @prompt player4_uuid
+# @prompt place_uuid
+POST {{url}}/game_sessions HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "ranking_uuid": "{{rankingUuid}}",
+    "players_uuids": [
+        "{{player1_uuid}}",
+        "{{player2_uuid}}",
+        "{{player3_uuid}}",
+        "{{player4_uuid}}"
+    ],
+    "place_uuid": "{{place_uuid}}",
+    "is_shuffled": true,
+    "is_novice_friendly": false,
+    "is_unranked": true
+}
+
+### Get places
+
+GET {{url}}/places HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+### Get filtered places
+# @prompt name
+GET {{url}}/places?name={{name}} HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+### Store `start` game event
+
+POST {{url}}/game_sessions/{{gameSessionUuid}}/events/start HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+### Store `end` game event
+
+POST {{url}}/game_sessions/{{gameSessionUuid}}/events/end HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+### Store `undo_game` game event
+
+POST {{url}}/game_sessions/{{gameSessionUuid}}/events/undo_game HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+### Store `undo_last` game event
+
+POST {{url}}/game_sessions/{{gameSessionUuid}}/events/undo_last HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+### Store `undo_last` game event
+
+POST {{url}}/game_sessions/{{gameSessionUuid}}/events/undo_last HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+### Store `finish_round_by_tsumo` game event
+
+POST {{url}}/game_sessions/{{gameSessionUuid}}/events/finish_round_by_tsumo HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
