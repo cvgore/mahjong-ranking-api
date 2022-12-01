@@ -7,6 +7,7 @@ mod places;
 mod users;
 mod validate;
 mod game_events;
+mod players;
 
 use std::convert::Infallible;
 use std::net::SocketAddr;
@@ -17,9 +18,8 @@ use crate::firebase::FirebaseTokenService;
 use app::AppError;
 use axum::handler::Handler;
 use axum::response::IntoResponse;
-use axum::routing::any;
-use axum::Extension;
-use axum::{routing::get, Json, Router};
+use axum::routing::{any, get};
+use axum::{Json, Router, Extension};
 use hyper::StatusCode;
 use serde_json::json;
 use tower_http::compression::CompressionLayer;
@@ -60,7 +60,8 @@ async fn main() {
                 .route("/", get(index.layer(CompressionLayer::new())))
                 .merge(games::router())
                 .merge(places::router())
-                .merge(game_events::router()),
+                .merge(game_events::router())
+                .merge(players::router()),
         )
         .layer(Extension(pool))
         .layer(Extension(firebase.clone()))

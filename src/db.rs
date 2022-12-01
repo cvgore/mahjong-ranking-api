@@ -1,4 +1,4 @@
-use std::{str::FromStr, time::Duration};
+use std::{str::FromStr};
 
 use axum::{
     async_trait,
@@ -11,7 +11,7 @@ use sqlx::{
 };
 
 use crate::{
-    app::{internal_error, AppError},
+    app::{AppError},
     config::Config,
 };
 
@@ -23,13 +23,11 @@ impl<B: Send> FromRequest<B> for DatabaseConnection {
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
         let Extension(pool) = Extension::<SqlitePool>::from_request(req)
-            .await
-            .map_err(internal_error)?;
+            .await?;
 
         let conn = pool.acquire()
-            .await
-            .map_err(internal_error)?;
-
+            .await?;
+        
         Ok(Self(conn))
     }
 }
@@ -40,11 +38,12 @@ pub async fn init_db(config: &Config) -> SqlitePool {
         .journal_mode(SqliteJournalMode::Wal)
         .synchronous(SqliteSynchronous::Normal)
         .page_size(config.database_pragma_cache_size)
+        .foreign_keys(false)
         .create_if_missing(true);
 
     SqlitePoolOptions::new()
         .max_connections(config.database_max_conn)
-        .connect_timeout(Duration::from_secs(config.database_conn_timeout))
+        // .connect_timeout(Duration::from_secs(config.database_conn_timeout))
         .connect_with(opts)
         .await
         .expect("could not connect to sqlite")

@@ -154,7 +154,7 @@ impl FirebaseTokenService {
                 serde_json::from_slice::<FirebaseCerts>(&body).map_err(|e| anyhow::Error::new(e))
             })
             .and_then(|certs| {
-                let prev_update_id = self.keys_update_id.fetch_add(1, Ordering::SeqCst);
+                let prev_update_id = self.keys_update_id.fetch_add(1, Ordering::Relaxed);
                 let curr_update_id = prev_update_id.wrapping_add(1);
                 for cert in certs.keys {
                     match DecodingKey::from_rsa_components(&cert.n, &cert.e) {

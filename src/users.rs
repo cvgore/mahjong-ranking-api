@@ -6,7 +6,7 @@ use crate::{firebase::FirebaseClaims, db::DatabaseConnection};
 
 pub struct CurrentUser {
     pub user_uid: String,
-    pub player_uuid: String
+    pub player_nid: String
 }
 
 #[async_trait]
@@ -19,16 +19,22 @@ where
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
         let claims = req.extract::<FirebaseClaims>().await.expect("firebase claims are gone");
         let conn = req.extract::<DatabaseConnection>().await.expect("db connection is gone");
+        let sub = claims.sub.as_str();
         let DatabaseConnection(mut conn) = conn;
-        let player_uuid = sqlx::query!("SELECT player_uuid FROM user_player WHERE user_uid = ?", claims.sub)
+
+        tracing::debug!("querying user with uid [{}]", sub);
+
+        let player_nid = sqlx::query!("SELECT player_nid FROM user_player WHERE user_uid = ?", sub)
             .fetch_one(&mut conn)
             .await
-            .and_then(|row| Ok(row.player_uuid))
+            .and_then(|row| Ok(row.player_nid))
             .map_err(|_| CurrentUserError::NotAssigned)?;
+
+        tracing::debug!("queried user with uid [{}] got nid [{}]", sub, player_nid);
 
         Ok(CurrentUser {
             user_uid: claims.sub,
-            player_uuid
+            player_nid
         })
     }
 }

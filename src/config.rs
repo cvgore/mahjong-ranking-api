@@ -11,7 +11,7 @@ pub struct Config {
 }
 
 pub fn init_config() -> Config {
-    dotenv::dotenv().ok();
+    dotenvy::dotenv().ok();
 
     envy::from_env::<Config>().expect("could not load .env file")
 }

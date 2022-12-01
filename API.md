@@ -2,6 +2,11 @@
 
 ## Prelude
 
+### Glossary
+
+#### `nid` = `uuid` = nanoid (https://github.com/ai/nanoid)
+Term `uuid` is being deprecated in favor of `nid`. If anywhere is mentioned `uuid`, it is meant to be `nid`.
+
 ### Versioning
 
 **Current api version is `0`**
@@ -66,7 +71,7 @@ Each response from API keeps same schema:
 201 Created
 
 {
-    "uuid": <uuid>  // uuid of newly created item
+    "nid": <nid>  // nanoid of newly created item
 }
 ```
 
