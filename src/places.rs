@@ -22,7 +22,7 @@ pub struct PlacesIndex {
 }
 #[derive(Deserialize)]
 struct PlacesModel {
-    nid: String,
+    uuid: String,
     name: String,
     street: Option<String>,
     city: String,
@@ -43,7 +43,7 @@ pub async fn places_index(
             let escaped = format!("{}%", name.replace('%', "\\%").replace('?', "\\?"));
             sqlx::query_as!(
                 PlacesModel,
-                "SELECT nid, name, street, city, country_code FROM places
+                "SELECT uuid, name, street, city, country_code FROM places
                 WHERE places.name LIKE ?
                 ORDER BY places.name ASC
                 LIMIT 5",
@@ -54,7 +54,7 @@ pub async fn places_index(
         None => {
             sqlx::query_as!(
                 PlacesModel,
-                "SELECT nid, name, street, city, country_code FROM places
+                "SELECT uuid, name, street, city, country_code FROM places
                 ORDER BY places.name ASC
                 LIMIT 5"
             ).fetch_all(&mut conn)
@@ -65,7 +65,7 @@ pub async fn places_index(
     Ok(Json(json!({
         "items": data.iter().map(|row| {
             json!({
-                "nid": row.nid,
+                "uuid": row.uuid,
                 "name": row.name,
                 "street": row.street,
                 "city": row.city,

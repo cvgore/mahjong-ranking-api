@@ -11,6 +11,7 @@ use crate::{
     db::DatabaseConnection,
     firebase, users,
 };
+use crate::validate::ValidatedQuery;
 
 pub fn router() -> Router {
     Router::new()
@@ -20,22 +21,26 @@ pub fn router() -> Router {
     )
 }
 
+#[derive(Deserialize, Validate)]
+pub struct PlayersIndex {
+    ranking_uuid: String,
+}
 pub async fn players_index(
     _claims: firebase::FirebaseClaims,
     _current_user: users::CurrentUser,
+    ValidatedQuery(query): ValidatedQuery<PlayersIndex>,
     DatabaseConnection(conn): DatabaseConnection,
 ) -> Result<impl IntoResponse, AppError> {
     let mut conn = conn;
 
     let data = sqlx::query!(
         r#"SELECT
-            rowid,
-            nid, usma_id, first_name, last_name, city, region, country_code,
+            uuid, usma_id, first_name, last_name, city, region, country_code,
             nickname, "is_exam_done: bool" as is_exam_done,
             "is_gdpr_agreed: bool" as is_gdpr_agreed,
             "is_guest: bool" as is_guest, "is_static: bool" as is_static
-        FROM players_cache WHERE ranking_nid = ? ORDER BY created_at DESC LIMIT 20"#,
-        1,
+        FROM players_cache WHERE ranking_uuid = ? ORDER BY created_at DESC"#,
+        query.ranking_uuid,
     )
     .fetch_all(&mut conn)
     .await?;
@@ -43,7 +48,7 @@ pub async fn players_index(
     Ok(Json(json!({
         "items": data.iter().map(|row| {
             json!({
-                "nid": row.nid,
+                "uuid": row.uuid,
                 "usma_id": row.usma_id,
                 "first_name": row.first_name,
                 "last_name": row.last_name,
@@ -58,7 +63,6 @@ pub async fn players_index(
             })
         }).collect::<Vec<_>>(),
         "count": data.len(),
-        "cursor": data.last().map_or(None, |row| Some(row.rowid)),
     })))
 }
 

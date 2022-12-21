@@ -6,7 +6,7 @@ use crate::{firebase::FirebaseClaims, db::DatabaseConnection};
 
 pub struct CurrentUser {
     pub user_uid: String,
-    pub player_nid: String
+    pub player_uuid: String
 }
 
 #[async_trait]
@@ -24,17 +24,17 @@ where
 
         tracing::debug!("querying user with uid [{}]", sub);
 
-        let player_nid = sqlx::query!("SELECT player_nid FROM user_player WHERE user_uid = ?", sub)
+        let player_uuid = sqlx::query!("SELECT player_uuid FROM user_player WHERE user_uid = ?", sub)
             .fetch_one(&mut conn)
             .await
-            .and_then(|row| Ok(row.player_nid))
+            .and_then(|row| Ok(row.player_uuid))
             .map_err(|_| CurrentUserError::NotAssigned)?;
 
-        tracing::debug!("queried user with uid [{}] got nid [{}]", sub, player_nid);
+        tracing::debug!("queried user with uid [{}] got uuid [{}]", sub, player_uuid);
 
         Ok(CurrentUser {
             user_uid: claims.sub,
-            player_nid
+            player_uuid
         })
     }
 }

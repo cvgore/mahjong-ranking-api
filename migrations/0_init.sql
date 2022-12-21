@@ -4,7 +4,7 @@
 --
 
 CREATE TABLE `rankings_cache` (
-    `nid` TEXT PRIMARY KEY NOT NULL COLLATE BINARY,
+    `uuid` TEXT PRIMARY KEY NOT NULL COLLATE BINARY,
     `name` TEXT NOT NULL,
     `created_at` INTEGER NOT NULL,
     `archived_at` INTEGER NULL
@@ -12,15 +12,15 @@ CREATE TABLE `rankings_cache` (
 
 -- if tracker_id is set, it means that game is external and stats are not available
 CREATE TABLE `game_sessions` (
-    `nid` TEXT PRIMARY KEY NOT NULL COLLATE BINARY,
-    `ranking_nid` TEXT NOT NULL COLLATE BINARY,
-    `creator_nid` TEXT NOT NULL COLLATE BINARY,
-    `player1_nid` TEXT NOT NULL COLLATE BINARY,
-    `player2_nid` TEXT NOT NULL COLLATE BINARY,
-    `player3_nid` TEXT NOT NULL COLLATE BINARY,
-    `player4_nid` TEXT NOT NULL COLLATE BINARY,
-    `tournament_nid` TEXT COLLATE BINARY,
-    `place_nid` TEXT NOT NULL COLLATE BINARY,
+    `uuid` TEXT PRIMARY KEY NOT NULL COLLATE BINARY,
+    `ranking_uuid` TEXT NOT NULL COLLATE BINARY,
+    `creator_uuid` TEXT NOT NULL COLLATE BINARY,
+    `player1_uuid` TEXT NOT NULL COLLATE BINARY,
+    `player2_uuid` TEXT NOT NULL COLLATE BINARY,
+    `player3_uuid` TEXT NOT NULL COLLATE BINARY,
+    `player4_uuid` TEXT NOT NULL COLLATE BINARY,
+    `tournament_uuid` TEXT COLLATE BINARY,
+    `place_uuid` TEXT NOT NULL COLLATE BINARY,
     `is_shuffled` INTEGER NOT NULL,
     `is_novice_friendly` INTEGER NOT NULL,
     `is_unranked` INTEGER NOT NULL,
@@ -38,9 +38,9 @@ CREATE TABLE `game_sessions` (
 );
 
 CREATE TABLE `game_session_events` (
-    `nid` TEXT NOT NULL COLLATE BINARY,
-    `game_session_nid` TEXT NOT NULL COLLATE BINARY,
-    `creator_nid` TEXT NOT NULL COLLATE BINARY,
+    `uuid` TEXT NOT NULL COLLATE BINARY,
+    `game_session_uuid` TEXT NOT NULL COLLATE BINARY,
+    `creator_uuid` TEXT NOT NULL COLLATE BINARY,
     `event_type` TEXT NOT NULL,
     `event_data` TEXT NULL,
     `created_at` INTEGER NOT NULL
@@ -51,7 +51,7 @@ CREATE TABLE `game_session_events` (
 -- wind is enum int-indexed => east = 0, south = 1, west = 2, north = 3
 
 CREATE TABLE `game_sessions_stats_cache` (
-    `game_session_nid` TEXT NOT NULL COLLATE BINARY,
+    `game_session_uuid` TEXT NOT NULL COLLATE BINARY,
     `player1_points` INTEGER NOT NULL,
     `player2_points` INTEGER NOT NULL,
     `player3_points` INTEGER NOT NULL,
@@ -64,8 +64,8 @@ CREATE TABLE `game_sessions_stats_cache` (
 );
 
 CREATE TABLE `players_cache` (
-    `nid` TEXT PRIMARY KEY NOT NULL COLLATE BINARY,
-    `ranking_nid` TEXT NOT NULL COLLATE BINARY,
+    `uuid` TEXT PRIMARY KEY NOT NULL COLLATE BINARY,
+    `ranking_uuid` TEXT NOT NULL COLLATE BINARY,
     `usma_id` TEXT NOT NULL,
     `first_name` TEXT,
     `last_name` TEXT,
@@ -80,15 +80,15 @@ CREATE TABLE `players_cache` (
     `created_at` INTEGER NOT NULL
 );
 
--- user_uid might be anything (i.e firebase uid, subjectid from jtw, nid, etc.)
+-- user_uid might be anything (i.e firebase uid, subjectid from jtw, uuid, etc.)
 CREATE TABLE `user_player` (
     `user_uid` TEXT PRIMARY KEY NOT NULL COLLATE BINARY,
-    `player_nid` TEXT NOT NULL COLLATE BINARY
+    `player_uuid` TEXT NOT NULL COLLATE BINARY
 );
 
 -- place_rank is a computed value from game_sessions daily
 CREATE TABLE `places` (
-    `nid` TEXT PRIMARY KEY NOT NULL COLLATE BINARY,
+    `uuid` TEXT PRIMARY KEY NOT NULL COLLATE BINARY,
     `name` TEXT NOT NULL,
     `street` TEXT,
     `city` TEXT NOT NULL,
@@ -101,7 +101,7 @@ CREATE TABLE `places` (
 CREATE UNIQUE INDEX `places_name_uidx` ON `places` (`name` ASC);
 
 CREATE TABLE `ranks_cache` (
-    `nid` TEXT PRIMARY KEY NOT NULL COLLATE BINARY,
+    `uuid` TEXT PRIMARY KEY NOT NULL COLLATE BINARY,
     `name` TEXT NOT NULL,
     `required_points` INTEGER NOT NULL,
     `required_exam` INTEGER NOT NULL,
@@ -110,9 +110,9 @@ CREATE TABLE `ranks_cache` (
 );
 
 CREATE TABLE `ranking_snapshot_cache` (
-    `ranking_nid` TEXT NOT NULL COLLATE BINARY,
-    `player_nid` TEXT NOT NULL COLLATE BINARY,
-    `rank_nid` TEXT NOT NULL COLLATE BINARY,
+    `ranking_uuid` TEXT NOT NULL COLLATE BINARY,
+    `player_uuid` TEXT NOT NULL COLLATE BINARY,
+    `rank_uuid` TEXT NOT NULL COLLATE BINARY,
     `rank_points` INTEGER NOT NULL,
     `elo_points` INTEGER NOT NULL
 );
