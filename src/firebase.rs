@@ -183,30 +183,41 @@ impl FirebaseTokenService {
     }
 
     pub async fn verify_id_token(&self, id_token: &str) -> Result<FirebaseClaims, anyhow::Error> {
-        decode_header(&id_token)
-            .map_err(|e| anyhow::Error::msg(format!("unable to decode id token header: {}", e)))
-            .and_then(|header| {
-                if header.kid.is_none() {
-                    Err(anyhow::Error::msg(
-                        "kid field is missing in the id token header",
-                    ))
-                } else {
-                    Ok(header.kid.unwrap())
-                }
-            })
-            .and_then(|key_id| {
-                self.decoding_keys
-                    .read()
-                    .get(&key_id)
-                    .ok_or(anyhow::Error::msg(
-                        "unknown kid from the id token header, not found in decoding keys",
-                    ))
-                    .cloned()
-            })
-            .and_then(|(_, decoding_key)| {
-                decode::<FirebaseClaims>(id_token, &decoding_key, &self.make_validator())
-                    .map_err(|e| anyhow::Error::msg(format!("unable to decode id token: {}", e)))
-            })
-            .and_then(|data| Ok(data.claims))
+        #[cfg(debug_assertions)] {
+            if std::env::var("DEV_NOVALIDATE_IDTOKEN").is_ok() {
+                return decode::<FirebaseClaims>(
+                    id_token,
+                    &DecodingKey::from_base64_secret("ZGVidWcK").expect("ZGVidWcK !== debug"),
+                    &self.make_validator()
+                )
+                .map_err(|e| anyhow::Error::msg(format!("unable to decode id token: {}", e)))
+                .and_then(|data| Ok(data.claims))
+            }
+        }
+            decode_header(&id_token)
+                .map_err(|e| anyhow::Error::msg(format!("unable to decode id token header: {}", e)))
+                .and_then(|header| {
+                    if header.kid.is_none() {
+                        Err(anyhow::Error::msg(
+                            "kid field is missing in the id token header",
+                        ))
+                    } else {
+                        Ok(header.kid.unwrap())
+                    }
+                })
+                .and_then(|key_id| {
+                    self.decoding_keys
+                        .read()
+                        .get(&key_id)
+                        .ok_or(anyhow::Error::msg(
+                            "unknown kid from the id token header, not found in decoding keys",
+                        ))
+                        .cloned()
+                })
+                .and_then(|(_, decoding_key)| {
+                    decode::<FirebaseClaims>(id_token, &decoding_key, &self.make_validator())
+                        .map_err(|e| anyhow::Error::msg(format!("unable to decode id token: {}", e)))
+                })
+                .and_then(|data| Ok(data.claims))
     }
 }

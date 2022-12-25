@@ -5,9 +5,12 @@ edition = "2021"
 publish = false
 license = "GPL-2.0-only"
 
+[patch.crates-io]
+jsonwebtoken = { path = "patches/jsonwebtoken" }
+
 [dependencies]
 serde = { version = "1.0.132" }
-jsonwebtoken = { version = "8.1.0" }
+jsonwebtoken = { version = "8.2.0" }
 chrono = { version = "0.4.19" }
 md-5 = { version = "0.10.0" }
 data-encoding = { version = "2.3.2" }
@@ -27,7 +30,7 @@ serde_json = { version = "1.0.73" }
 futures-util = { version = "0.3.21" }
 hyper-tls = { version = "0.5.0" }
 hashbrown = { version = "0.12.1" }
-tower-http = { version = "0.3.4", features = ["compression-gzip"] }
+tower-http = { version = "0.3.4", features = ["compression-gzip", "cors"] }
 validator = { version = "0.15.0", features = ["derive"] }
 rand = { version = "0.8.5" }
 smartstring = { version = "1.0.1" }

@@ -6,6 +6,7 @@ use axum::{
     routing::{get},
     Json, Router,
 };
+use axum::extract::Path;
 use hyper::StatusCode;
 use rand::prelude::SliceRandom;
 use serde::Deserialize;
@@ -22,10 +23,14 @@ use crate::{
 
 pub fn router() -> Router {
     Router::new().route(
-        "/game_sessions",
-        get(game_sessions_index.layer(CompressionLayer::new()))
-            .post(game_sessions_create.layer(CompressionLayer::new())),
+        "/rankings/:ranking_uuid/game_sessions",
+        get(game_sessions_index)
+            .post(game_sessions_create),
     )
+        .route(
+            "/rankings/:ranking_uuid/game_sessions/:game_session_uuid",
+            get(game_sessions_show)
+        )
 }
 
 #[derive(Clone)]
@@ -93,13 +98,17 @@ where
         let uuid = {
             let uri = req.uri();
 
+            tracing::debug!("url to test for game session uuid [{}]", uri);
+
             uri
             .path()
             .split('/')
-            .nth(2)
+            .nth(4)
             .ok_or(GameSessionUuidError::NotFound)?
             .to_string()
         };
+
+        tracing::debug!("uuid to test for game session uuid [{}]", uuid);
 
         if uuid.len() != crate::app::UUID_STRLEN {
             return Err(GameSessionUuidError::NotFound);
@@ -194,12 +203,12 @@ pub async fn game_sessions_create(
 
 #[derive(Deserialize, Validate)]
 pub struct GameSessionsIndex {
-    ranking_uuid: String,
     after: Option<i64>,
 }
 pub async fn game_sessions_index(
     _claims: firebase::FirebaseClaims,
     _current_user: users::CurrentUser,
+    Path(ranking_uuid): Path<String>,
     ValidatedQuery(input): ValidatedQuery<GameSessionsIndex>,
     DatabaseConnection(conn): DatabaseConnection,
 ) -> Result<impl IntoResponse, AppError> {
@@ -215,7 +224,7 @@ pub async fn game_sessions_index(
         AND rowid > ? 
         ORDER BY rowid
         LIMIT ?",
-        input.ranking_uuid,
+        ranking_uuid,
         cursor,
         (PAGE_LIMIT + 1) as i64
     )
@@ -237,5 +246,65 @@ pub async fn game_sessions_index(
         }).collect::<Vec<_>>(),
         "count": data.len(),
         "cursor": data.iter().nth(PAGE_LIMIT).map_or(None, |row| Some(row.rowid)),
+    })))
+}
+
+pub async fn game_sessions_show(
+    _claims: firebase::FirebaseClaims,
+    _current_user: users::CurrentUser,
+    Path((_ranking_uuid, game_session_uuid)): Path<(String, String)>,
+    DatabaseConnection(conn): DatabaseConnection,
+) -> Result<impl IntoResponse, AppError> {
+    let mut conn = conn;
+
+    let game_session = sqlx::query!(
+        "SELECT
+            uuid, creator_uuid, player1_uuid, player2_uuid, player3_uuid, player4_uuid,
+            place_uuid, is_shuffled, is_novice_friendly, is_unranked, created_at
+        FROM game_sessions
+        WHERE uuid = ?
+        LIMIT 1",
+        game_session_uuid
+    )
+        .fetch_one(&mut conn)
+        .await?;
+
+    let events = sqlx::query!(
+        "SELECT
+            uuid, creator_uuid, event_type, event_data, created_at
+        FROM game_session_events
+        WHERE game_session_uuid = ?
+        ORDER BY created_at ASC",
+        game_session_uuid,
+    )
+        .fetch_all(&mut conn)
+        .await?;
+
+    Ok(Json(json!({
+        "items": vec![
+            json!({
+                "uuid": game_session.uuid,
+                "creator_uuid": game_session.creator_uuid,
+                "players_uuids": [game_session.player1_uuid, game_session.player2_uuid, game_session.player3_uuid, game_session.player4_uuid],
+                "place_uuid": game_session.place_uuid,
+                "is_shuffled": game_session.is_shuffled,
+                "is_novice_friendly": game_session.is_novice_friendly,
+                "is_unranked": game_session.is_unranked,
+                "created_at": game_session.created_at,
+                "$events": json!({
+                    "items": events.iter().map(|row| {
+                        json!({
+                            "uuid": row.uuid,
+                            "creator_uuid": row.creator_uuid,
+                            "event_type": row.event_type,
+                            "event_data": row.event_data,
+                            "created_at": row.created_at,
+                        })
+                    }).collect::<Vec<_>>(),
+                    "count": events.len()
+                })
+            })
+        ],
+        "count": 1,
     })))
 }

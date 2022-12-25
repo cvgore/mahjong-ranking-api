@@ -1,7 +1,6 @@
 target/
 .env
 db.sqlite3*
-dataseed.sql
 
 .vscode/*
 !.vscode/settings.json

@@ -1,18 +1,20 @@
-use axum::{async_trait, extract::{FromRequest, RequestParts}, response::{Response, IntoResponse}, Json};
+use axum::{async_trait, extract::{FromRequest, RequestParts}, response::{Response, IntoResponse}, Json, Router};
+use axum::routing::get;
 use hyper::StatusCode;
 use serde_json::json;
 
-use crate::{firebase::FirebaseClaims, db::DatabaseConnection};
+use crate::{firebase::FirebaseClaims, db::DatabaseConnection, firebase, users};
+use crate::app::AppError;
 
 pub struct CurrentUser {
     pub user_uid: String,
-    pub player_uuid: String
+    pub player_uuid: String,
 }
 
 #[async_trait]
 impl<B> FromRequest<B> for CurrentUser
-where
-    B: Send,
+    where
+        B: Send,
 {
     type Rejection = CurrentUserError;
 
@@ -34,7 +36,7 @@ where
 
         Ok(CurrentUser {
             user_uid: claims.sub,
-            player_uuid
+            player_uuid,
         })
     }
 }
@@ -57,4 +59,27 @@ impl IntoResponse for CurrentUserError {
         }));
         (status, body).into_response()
     }
+}
+
+pub fn router() -> Router {
+    Router::new()
+        .route(
+            "/users/@me",
+            get(users_me),
+        )
+}
+
+pub async fn users_me(
+    _claims: firebase::FirebaseClaims,
+    current_user: users::CurrentUser,
+) -> Result<impl IntoResponse, AppError> {
+    Ok(Json(json!({
+        "items": vec![
+            json!({
+                "user_uid": current_user.user_uid,
+                "player_uuid": current_user.player_uuid,
+            })
+        ],
+        "count": 1,
+    })))
 }

@@ -7,7 +7,7 @@ use hyper::StatusCode;
 use serde_json::json;
 use tracing::log;
 
-pub const UUID_STRLEN: usize = 32;
+pub const UUID_STRLEN: usize = 36;
 
 #[derive(Debug)]
 pub enum AppError {

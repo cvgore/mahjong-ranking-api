@@ -8,6 +8,8 @@ mod users;
 mod validate;
 mod game_events;
 mod players;
+mod rankings;
+mod ranks;
 
 use std::convert::Infallible;
 use std::net::SocketAddr;
@@ -19,11 +21,12 @@ use app::AppError;
 use axum::handler::Handler;
 use axum::response::IntoResponse;
 use axum::routing::{any, get};
-use axum::{Json, Router, Extension};
+use axum::{Json, Router, Extension, http};
 use hyper::StatusCode;
 use serde_json::json;
 use tower_http::compression::CompressionLayer;
 use tracing::{debug, error, info};
+use tower_http::cors::{Any, CorsLayer};
 
 fn spawn_worker_thread(firebase: Arc<FirebaseTokenService>) -> tokio::task::JoinHandle<Infallible> {
     tokio::spawn(async move {
@@ -52,20 +55,31 @@ async fn main() {
         config.firebase_project_id.clone(),
     ));
 
+    let cors = CorsLayer::new()
+        .allow_methods(Any)
+        .allow_headers([http::header::CONTENT_TYPE, http::header::AUTHORIZATION])
+        .allow_origin(Any);
+
     let app = Router::new()
-        .route("/", any(no_way_in.layer(CompressionLayer::new())))
+        .route("/", any(no_way_in))
         .nest(
             "/v0",
             Router::new()
-                .route("/", get(index.layer(CompressionLayer::new())))
+                .route("/", get(index))
                 .merge(games::router())
                 .merge(places::router())
                 .merge(game_events::router())
-                .merge(players::router()),
+                .merge(players::router())
+                .merge(ranks::router())
+                .merge(users::router())
+                .merge(rankings::router())
+                .layer(&cors),
         )
+        .layer(&cors)
+        .layer(CompressionLayer::new())
         .layer(Extension(pool))
         .layer(Extension(firebase.clone()))
-        .fallback(not_found.layer(CompressionLayer::new()).into_service());
+        .fallback(not_found.layer(CompressionLayer::new()).layer(&cors).into_service());
     let addr = SocketAddr::from_str(&config.bind_interface).expect("malformed bind_interface str");
 
     let worker_thread = spawn_worker_thread(firebase);

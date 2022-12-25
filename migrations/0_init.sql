@@ -102,6 +102,7 @@ CREATE UNIQUE INDEX `places_name_uidx` ON `places` (`name` ASC);
 
 CREATE TABLE `ranks_cache` (
     `uuid` TEXT PRIMARY KEY NOT NULL COLLATE BINARY,
+    `ranking_uuid` TEXT NOT NULL COLLATE BINARY,
     `name` TEXT NOT NULL,
     `required_points` INTEGER NOT NULL,
     `required_exam` INTEGER NOT NULL,

@@ -16,12 +16,12 @@ use crate::validate::ValidatedQuery;
 pub fn router() -> Router {
     Router::new()
     .route(
-        "/rankings/:ranking_uuid/players",
-        get(players_index),
+        "/rankings/:ranking_uuid/ranks",
+        get(ranks_index),
     )
 }
 
-pub async fn players_index(
+pub async fn ranks_index(
     _claims: firebase::FirebaseClaims,
     _current_user: users::CurrentUser,
     Path(ranking_uuid): Path<String>,
@@ -31,12 +31,8 @@ pub async fn players_index(
 
     let data = sqlx::query!(
         r#"SELECT
-            uuid, usma_id, first_name, last_name, city, region, country_code,
-            nickname, "is_exam_done: bool" as is_exam_done,
-            "is_gdpr_agreed: bool" as is_gdpr_agreed,
-            "is_guest: bool" as is_guest, "is_static: bool" as is_static
-        FROM players_cache WHERE ranking_uuid = ? ORDER BY created_at DESC LIMIT 1000000"#,
-        ranking_uuid,
+            uuid, name, required_points, required_exam, color
+        FROM ranks_cache ORDER BY created_at ASC"#
     )
     .fetch_all(&mut conn)
     .await?;
@@ -45,20 +41,12 @@ pub async fn players_index(
         "items": data.iter().map(|row| {
             json!({
                 "uuid": row.uuid,
-                "usma_id": row.usma_id,
-                "first_name": row.first_name,
-                "last_name": row.last_name,
-                "city": row.city,
-                "region": row.region,
-                "country_code": row.country_code,
-                "nickname": row.nickname,
-                "is_exam_done": row.is_exam_done,
-                "is_gdpr_agreed": row.is_gdpr_agreed,
-                "is_guest": row.is_guest,
-                "is_static": row.is_static,
+                "name": row.name,
+                "required_points": row.required_points,
+                "required_exam": row.required_exam,
+                "color": row.color,
             })
         }).collect::<Vec<_>>(),
         "count": data.len(),
     })))
 }
-
